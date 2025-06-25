@@ -1,4 +1,30 @@
 package br.com.doc_voice.controller;
 
+import br.com.doc_voice.dto.TextExtractionResponseDTO;
+import br.com.doc_voice.service.PdfExtractionService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+
+@RestController
+@RequestMapping("/api/documents")
+@RequiredArgsConstructor
 public class DocumentController {
+
+    private final PdfExtractionService pdfExtractionService;
+
+    @PostMapping("/extract-text")
+    public ResponseEntity<TextExtractionResponseDTO> extractText(
+            @Valid @RequestParam("file") MultipartFile file) throws IOException {
+        String text = pdfExtractionService.extractText(file);
+        return ResponseEntity.status(HttpStatus.OK).body(new TextExtractionResponseDTO(text));
+    }
 }
