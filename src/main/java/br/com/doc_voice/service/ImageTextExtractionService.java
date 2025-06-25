@@ -30,12 +30,12 @@ public class ImageTextExtractionService {
 
         String result = tesseract.doOCR(bufferedImage);
 
-        // Loga o resultado no console para debug
+        
         System.out.println("Texto extraído: [" + result + "]");
 
         tempFile.delete();
 
-        // Se não extraiu nada, retorna mensagem clara
+        
         if (result == null || result.trim().isEmpty()) {
             return "Nenhum texto foi extraído da imagem.";
         }
