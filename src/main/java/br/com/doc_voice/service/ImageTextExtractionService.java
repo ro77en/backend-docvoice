@@ -31,7 +31,7 @@ public class ImageTextExtractionService {
         BufferedImage bufferedImage = matToBufferedImage(processed);
 
         Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath("/home/luke/Downloads");
+        tesseract.setDatapath("src/main/resources/tessdata");
         tesseract.setLanguage("por"); 
 
         String result = tesseract.doOCR(bufferedImage);
