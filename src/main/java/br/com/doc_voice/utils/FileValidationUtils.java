@@ -16,7 +16,7 @@ public class FileValidationUtils {
         ".jpg", ".jpeg", ".png", ".pdf", ".pptx"
     };
 
-    private static final long MAX_SIZE = 5 * 1024 * 1024; // conferir com a squad
+    private static final long MAX_SIZE = 5 * 1024 * 1024; 
 
     public static boolean isValidFormat(MultipartFile file) {
         return Arrays.asList(ALLOWED_FORMATS).contains(file.getContentType());
@@ -37,7 +37,7 @@ public class FileValidationUtils {
             return new ValidationResult(false, "Arquivo vazio.");
         }
         if (!isValidFormat(file)) {
-            return new ValidationResult(false,"Formato " + file.getContentType() + " não é suportado. Use: " + String.join(", ", ALLOWED_FORMATS));
+            return new ValidationResult(false,"Formato " + file.getContentType() + " não é suportado. Use: PDF, JPG, JPEG OU PPTX" );
         }
         if (!isValidSize(file)) {
             return new ValidationResult(false, "Arquivo muito grande (" + MAX_SIZE / (1024 * 1024) + " MB).");

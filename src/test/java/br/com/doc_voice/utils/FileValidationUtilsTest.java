@@ -21,7 +21,6 @@ class FileValidationUtilsTest {
         assertEquals("Arquivo válido.", result.getMessage());
     }
 
-   // Segundo Teste Corrigido (Invalid Format)
 @Test
 void testInvalidFormat() {
     MultipartFile file = Mockito.mock(MultipartFile.class);
@@ -32,13 +31,10 @@ void testInvalidFormat() {
 
     FileValidationUtils.ValidationResult result = FileValidationUtils.validate(file);
     assertFalse(result.isValid());
-    // Verifica se contém partes da mensagem esperada
     assertTrue(result.getMessage().startsWith("Formato text/plain não é suportado."));
     assertTrue(result.getMessage().contains("image/jpeg"));
     assertTrue(result.getMessage().contains("application/pdf"));
 }
-
-// Terceiro Teste Corrigido (Invalid Extension)
 @Test
 void testInvalidExtension() {
     MultipartFile file = Mockito.mock(MultipartFile.class);
@@ -49,11 +45,9 @@ void testInvalidExtension() {
 
     FileValidationUtils.ValidationResult result = FileValidationUtils.validate(file);
     assertFalse(result.isValid());
-    // Ajustado para a mensagem simples do código original
     assertEquals("Extensão inválida.", result.getMessage());
 }
 
-// Quarto Teste Corrigido (File Too Large)
 @Test
 void testFileTooLarge() {
     MultipartFile file = Mockito.mock(MultipartFile.class);
@@ -64,7 +58,6 @@ void testFileTooLarge() {
 
     FileValidationUtils.ValidationResult result = FileValidationUtils.validate(file);
     assertFalse(result.isValid());
-    // A mensagem exata do seu código é "Arquivo muito grande (5 MB)."
     assertEquals("Arquivo muito grande (5 MB).", result.getMessage()); 
 }
 
