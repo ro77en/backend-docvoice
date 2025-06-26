@@ -1,5 +1,9 @@
 package br.com.doc_voice.service;
 
+import br.com.doc_voice.exception.ConvertException;
+import br.com.doc_voice.exception.ExtractionException;
+import br.com.doc_voice.exception.GeminiCallException;
+import br.com.doc_voice.exception.InvalidFileException;
 import br.com.doc_voice.utils.FileValidationUtils;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -59,10 +63,10 @@ public class ExtractionService {
                     
                     """;
 
-    public String extractText(MultipartFile file) throws Exception {
+    public String extractText(MultipartFile file) throws IOException {
 
         FileValidationUtils.ValidationResult fileValidationResult = FileValidationUtils.validate(file);
-        if (!fileValidationResult.isValid()) return fileValidationResult.getMessage();
+        if (!fileValidationResult.isValid()) throw new InvalidFileException(fileValidationResult.getMessage());
 
         String contentType = file.getContentType();
 
@@ -85,40 +89,50 @@ public class ExtractionService {
                         Part.fromBytes(imageBytes, contentType)
                 );
             }
-            case null -> throw new IllegalArgumentException("Tipo de arquivo não identificado");
-            default -> throw new IllegalArgumentException("Tipo de arquivo não suportado: " + contentType);
+            case null -> throw new InvalidFileException("Tipo de arquivo não identificado");
+            default -> throw new InvalidFileException("Tipo de arquivo não suportado: " + contentType);
         };
 
         return callGeminiApi(content);
     }
 
-    private String extractFromPdf(MultipartFile pdfFile) throws IOException {
+    private String extractFromPdf(MultipartFile pdfFile) {
         try (RandomAccessRead randomAccessRead = new RandomAccessReadBuffer(pdfFile.getInputStream())) {
             PDDocument document = Loader.loadPDF(randomAccessRead);
             PDFTextStripper stripper = new PDFTextStripper();
             return stripper.getText(document);
+        } catch (IOException e) {
+            throw new ExtractionException("Erro na extração de texto do documento: " + e.getMessage());
         }
     }
 
     private String callGeminiApi(Content content) {
-        GenerateContentResponse response = client.models
-                .generateContent("gemini-2.5-flash", content, null);
-        if (response != null && response.text() != null) {
+        try {
+            GenerateContentResponse response = client.models
+                    .generateContent("gemini-2.5-flash", content, null);
+
+            if (response == null || response.text() == null) {
+                throw new GeminiCallException("Resposta vazia ou inválida do Gemini");
+            }
             return response.text();
-        } else {
-            return "Não foi possível simplificar o texto. Resposta da API Gemini vazia.";
+        } catch (Exception e) {
+            throw new GeminiCallException("Erro ao chamar a API do Gemini: " + e.getMessage(), e);
         }
     }
 
-    private byte[] convertPptToPdf(MultipartFile file) throws Exception {
+    private byte[] convertPptToPdf(MultipartFile file)  {
         Presentation ppt = new Presentation();
-        ppt.loadFromStream(file.getInputStream(), FileFormat.PPT);
+        try {
+            ppt.loadFromStream(file.getInputStream(), FileFormat.PPT);
 
-        ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
-        ppt.saveToFile(pdfOutputStream, FileFormat.PDF);
-        byte[] bytes = pdfOutputStream.toByteArray();
+            ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
+            ppt.saveToFile(pdfOutputStream, FileFormat.PDF);
+            byte[] bytes = pdfOutputStream.toByteArray();
 
-        ppt.dispose();
-        return bytes;
+            ppt.dispose();
+            return bytes;
+        } catch (Exception e) {
+            throw new ConvertException("Erro na conversão de arquivo: " + e.getMessage());
+        }
     }
 }
