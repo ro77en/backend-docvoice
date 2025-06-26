@@ -42,18 +42,29 @@ public class ExtractionService {
         FileValidationUtils.ValidationResult fileValidationResult = FileValidationUtils.validate(file);
         if (!fileValidationResult.isValid()) return fileValidationResult.getMessage();
 
-        Content content = switch (file.getContentType()) {
+        String contentType = file.getContentType();
+
+        Content content = switch (contentType) {
             case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> {
                 byte[] converted = convertPptToPdf(file);
-                yield Content.fromParts(Part.fromBytes(converted, pdfMimeType),
-                        Part.fromText("Descreva a imagem acima e extraia o conteúdo de texto, se houver."));
+                yield Content.fromParts(
+                        Part.fromBytes(converted, pdfMimeType),
+                        Part.fromText("Descreva a imagem acima e extraia o conteúdo de texto, se houver.")
+                );
             }
             case "application/pdf" -> {
                 String text = extractFromPdf(file);
                 yield Content.fromParts(Part.fromText(text));
             }
-            case null -> null;
-            default -> throw new IllegalArgumentException("Tipo de arquivo não suportado: " + file.getContentType());
+            case "image/jpeg", "image/jpg", "image/png" -> {
+                byte[] imageBytes = file.getBytes();
+                yield Content.fromParts(
+                        Part.fromBytes(imageBytes, contentType),
+                        Part.fromText("Descreva a imagem acima e extraia o conteúdo de texto, se houver.")
+                );
+            }
+            case null -> throw new IllegalArgumentException("Tipo de arquivo não identificado");
+            default -> throw new IllegalArgumentException("Tipo de arquivo não suportado: " + contentType);
         };
 
         return callGeminiApi(content);
