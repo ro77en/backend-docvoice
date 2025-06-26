@@ -30,6 +30,14 @@
 		<java.version>21</java.version>
 		<spring-ai.version>1.0.0</spring-ai.version>
 	</properties>
+	<repositories>
+		<repository>
+			<id>com.e-iceblue</id>
+			<name>e-iceblue</name>
+			<url>https://repo.e-iceblue.com/nexus/content/groups/public/</url>
+		</repository>
+	</repositories>
+
 	<dependencies>
 
 		<dependency>
@@ -80,6 +88,17 @@
     		<artifactId>tess4j</artifactId>
     		<version>5.11.0</version>	
 		</dependency>
+		<dependency>
+			<groupId>com.google.genai</groupId>
+			<artifactId>google-genai</artifactId>
+			<version>1.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>e-iceblue</groupId>
+			<artifactId>spire.presentation.free</artifactId>
+			<version>5.2.0</version>
+		</dependency>
+
 	</dependencies>
 	<dependencyManagement>
 		<dependencies>
