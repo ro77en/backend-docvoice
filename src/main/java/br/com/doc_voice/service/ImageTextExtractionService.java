@@ -36,16 +36,14 @@ public class ImageTextExtractionService {
 
         String result = tesseract.doOCR(bufferedImage);
 
-        String response = extractionService.simplifyText(result);
-
-        System.out.println("Texto extraído: [" + response + "]");
+        System.out.println("Texto extraído: [" + result + "]");
 
         tempFile.delete();
 
         if (result == null || result.trim().isEmpty()) {
             return "Nenhum texto foi extraído da imagem.";
         }
-        return response;
+        return result;
     }
 
     private BufferedImage matToBufferedImage(Mat mat) throws IOException {
