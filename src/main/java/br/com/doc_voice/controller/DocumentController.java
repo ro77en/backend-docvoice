@@ -3,7 +3,6 @@ package br.com.doc_voice.controller;
 import br.com.doc_voice.dto.TextExtractionResponseDTO;
 import br.com.doc_voice.service.ExtractionService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,10 +13,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/documents")
-@RequiredArgsConstructor
 public class DocumentController {
 
     private final ExtractionService extractionService;
+
+    public DocumentController(ExtractionService extractionService) {
+        this.extractionService = extractionService;
+    }
 
     @PostMapping("/extract-text")
     public ResponseEntity<TextExtractionResponseDTO> extractText(
