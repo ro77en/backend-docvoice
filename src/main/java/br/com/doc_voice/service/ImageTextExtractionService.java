@@ -15,6 +15,12 @@ import java.io.*;
 @Service
 public class ImageTextExtractionService {
 
+    private final ExtractionService extractionService;
+
+    public ImageTextExtractionService(ExtractionService extractionService) {
+        this.extractionService = extractionService;
+    }
+
     public String extractText(MultipartFile file) throws IOException, TesseractException {
         File tempFile = File.createTempFile("upload", ".tmp");
         file.transferTo(tempFile);
@@ -25,21 +31,21 @@ public class ImageTextExtractionService {
         BufferedImage bufferedImage = matToBufferedImage(processed);
 
         Tesseract tesseract = new Tesseract();
-        tesseract.setDatapath("C:\\Users\\nilto\\Downloads"); 
+        tesseract.setDatapath("/home/luke/Downloads");
         tesseract.setLanguage("por"); 
 
         String result = tesseract.doOCR(bufferedImage);
 
-        
-        System.out.println("Texto extraído: [" + result + "]");
+        String response = extractionService.simplifyText(result);
+
+        System.out.println("Texto extraído: [" + response + "]");
 
         tempFile.delete();
 
-        
         if (result == null || result.trim().isEmpty()) {
             return "Nenhum texto foi extraído da imagem.";
         }
-        return result;
+        return response;
     }
 
     private BufferedImage matToBufferedImage(Mat mat) throws IOException {
