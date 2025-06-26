@@ -37,23 +37,56 @@ public class ExtractionService {
 
     String pdfMimeType = "application/pdf";
 
+    private static final String ACCESSIBILITY_PROMPT =
+            """
+                    Você é um assistente especializado em criar resumos acessíveis e claros de documentos para pessoas com deficiência visual, dislexia ou dificuldades de leitura.
+                    \s
+                    Por favor, analise o seguinte conteúdo e crie um resumo acessível seguindo estas diretrizes:
+                                  \s
+                                    1. **Linguagem Clara**: Use frases simples e diretas
+                                    2. **Estrutura Organizada**: Organize as informações em tópicos principais
+                                    3. **Acessibilidade**: Descreva qualquer referência a elementos visuais (gráficos, tabelas, imagens)
+                                    4. **Concisão**: Mantenha as informações essenciais, removendo redundâncias
+                                    5. **Contexto**: Forneça contexto suficiente para compreensão autônoma
+                                  \s
+                                    **Formato de Resposta:**
+                                    - Comece com um parágrafo de contextualização
+                                    - Liste os pontos principais em tópicos numerados
+                                    - Inclua uma conclusão ou síntese final
+                                    - Se houver elementos visuais mencionados, descreva-os textualmente
+                                 \s
+                    Responda somente o resumo acessível, sem cumprimentos ou floreios.
+                    
+                    """;
+
     public String extractText(MultipartFile file) throws Exception {
 
         FileValidationUtils.ValidationResult fileValidationResult = FileValidationUtils.validate(file);
         if (!fileValidationResult.isValid()) return fileValidationResult.getMessage();
 
-        Content content = switch (file.getContentType()) {
+        String contentType = file.getContentType();
+
+        Content content = switch (contentType) {
             case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> {
                 byte[] converted = convertPptToPdf(file);
-                yield Content.fromParts(Part.fromBytes(converted, pdfMimeType),
-                        Part.fromText("Descreva a imagem acima e extraia o conteúdo de texto, se houver."));
+                yield Content.fromParts(
+                        Part.fromBytes(converted, pdfMimeType),
+                        Part.fromText(ACCESSIBILITY_PROMPT + "Conteúdo do documento: ")
+                );
             }
             case "application/pdf" -> {
                 String text = extractFromPdf(file);
-                yield Content.fromParts(Part.fromText(text));
+                yield Content.fromParts(Part.fromText(ACCESSIBILITY_PROMPT + "Conteúdo do documento PDF:\n\n " + text));
             }
-            case null -> null;
-            default -> throw new IllegalArgumentException("Tipo de arquivo não suportado: " + file.getContentType());
+            case "image/jpeg", "image/jpg", "image/png" -> {
+                byte[] imageBytes = file.getBytes();
+                yield Content.fromParts(
+                        Part.fromText(ACCESSIBILITY_PROMPT + "Conteúdo da imagem:"),
+                        Part.fromBytes(imageBytes, contentType)
+                );
+            }
+            case null -> throw new IllegalArgumentException("Tipo de arquivo não identificado");
+            default -> throw new IllegalArgumentException("Tipo de arquivo não suportado: " + contentType);
         };
 
         return callGeminiApi(content);
@@ -63,8 +96,7 @@ public class ExtractionService {
         try (RandomAccessRead randomAccessRead = new RandomAccessReadBuffer(pdfFile.getInputStream())) {
             PDDocument document = Loader.loadPDF(randomAccessRead);
             PDFTextStripper stripper = new PDFTextStripper();
-            String response = simplifyText((stripper.getText(document)));
-            return response;
+            return stripper.getText(document);
         }
     }
 
@@ -88,30 +120,5 @@ public class ExtractionService {
 
         ppt.dispose();
         return bytes;
-    }
-
-    public String simplifyText(String text) {
-        String prompt = "Você é um assistente especializado em criar resumos acessíveis e claros de documentos para pessoas com deficiência visual, dislexia ou dificuldades de leitura.\n" +
-                " \n" +
-                "Por favor, analise o seguinte texto extraído de um documento e crie um resumo acessível seguindo estas diretrizes:\n" +
-                "               \n" +
-                "                1. **Linguagem Clara**: Use frases simples e diretas\n" +
-                "                2. **Estrutura Organizada**: Organize as informações em tópicos principais\n" +
-                "                3. **Acessibilidade**: Descreva qualquer referência a elementos visuais (gráficos, tabelas, imagens)\n" +
-                "                4. **Concisão**: Mantenha as informações essenciais, removendo redundâncias\n" +
-                "                5. **Contexto**: Forneça contexto suficiente para compreensão autônoma\n" +
-                "               \n" +
-                "                **Formato de Resposta:**\n" +
-                "                - Comece com um parágrafo de contextualização\n" +
-                "                - Liste os pontos principais em tópicos numerados\n" +
-                "                - Inclua uma conclusão ou síntese final\n" +
-                "                - Se houver elementos visuais mencionados, descreva-os textualmente\n" +
-                "              \n" +
-                "Responda somente o resumo acessível, sem cumprimentos ou floreios." +
-                " " +
-                "\n\n" + text;
-
-        Content content = Content.fromParts(Part.fromText(prompt));
-        return callGeminiApi(content);
     }
 }
