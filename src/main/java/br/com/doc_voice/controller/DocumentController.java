@@ -1,6 +1,10 @@
 package br.com.doc_voice.controller;
 
 import br.com.doc_voice.dto.TextExtractionResponseDTO;
+import br.com.doc_voice.exception.ConvertException;
+import br.com.doc_voice.exception.ExtractionException;
+import br.com.doc_voice.exception.GeminiCallException;
+import br.com.doc_voice.exception.InvalidFileException;
 import br.com.doc_voice.service.ExtractionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,9 +26,23 @@ public class DocumentController {
     }
 
     @PostMapping("/extract-text")
-    public ResponseEntity<TextExtractionResponseDTO> extractText(
-            @Valid @RequestParam("file") MultipartFile file) throws Exception {
-        String text = extractionService.extractText(file);
-        return ResponseEntity.status(HttpStatus.OK).body(new TextExtractionResponseDTO(text));
+    public ResponseEntity<?> extractText(@Valid @RequestParam("file") MultipartFile file) {
+        try {
+            String text = extractionService.extractText(file);
+            return ResponseEntity.ok(new TextExtractionResponseDTO(text));
+        } catch (InvalidFileException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ExtractionException e) {
+            if (e.getMessage().contains("Erro na extração de texto")) {
+                return ResponseEntity.badRequest().body("Arquivo PDF corrompido ou danificado");
+            }
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (ConvertException e) {
+            return ResponseEntity.badRequest().body("Arquivo PowerPoint corrompido ou danificado");
+        } catch (GeminiCallException e) {
+            return ResponseEntity.status(500).body("Erro no processamento do texto");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Erro interno do servidor");
+        }
     }
 }
