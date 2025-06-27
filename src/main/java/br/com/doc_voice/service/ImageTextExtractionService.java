@@ -15,12 +15,6 @@ import java.io.*;
 @Service
 public class ImageTextExtractionService {
 
-    private final ExtractionService extractionService;
-
-    public ImageTextExtractionService(ExtractionService extractionService) {
-        this.extractionService = extractionService;
-    }
-
     public String extractText(MultipartFile file) throws IOException, TesseractException {
         File tempFile = File.createTempFile("upload", ".tmp");
         file.transferTo(tempFile);

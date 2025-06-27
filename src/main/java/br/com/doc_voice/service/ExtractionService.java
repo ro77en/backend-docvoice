@@ -34,6 +34,8 @@ public class ExtractionService {
 
     private Client client;
 
+    private final ImageTextExtractionService imageTextExtractionService;
+
     @PostConstruct
     public void init() {
         this.client = new Client.Builder().apiKey(apiKey).build();
@@ -83,11 +85,15 @@ public class ExtractionService {
                 yield Content.fromParts(Part.fromText(ACCESSIBILITY_PROMPT + "Conteúdo do documento PDF:\n\n " + text));
             }
             case "image/jpeg", "image/jpg", "image/png" -> {
-                byte[] imageBytes = file.getBytes();
-                yield Content.fromParts(
-                        Part.fromText(ACCESSIBILITY_PROMPT + "Conteúdo da imagem:"),
-                        Part.fromBytes(imageBytes, contentType)
-                );
+                try {
+                    String extracted = imageTextExtractionService.extractText(file);
+                    yield Content.fromParts(
+                            Part.fromText(ACCESSIBILITY_PROMPT + "Conteúdo da imagem:"),
+                            Part.fromText(extracted)
+                    );
+                } catch (Exception e) {
+                    throw new ExtractionException("Não foi possível realizar a extração: " + e.getMessage());
+                }
             }
             case null -> throw new InvalidFileException("Tipo de arquivo não identificado");
             default -> throw new InvalidFileException("Tipo de arquivo não suportado: " + contentType);
